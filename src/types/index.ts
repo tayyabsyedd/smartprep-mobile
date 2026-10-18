@@ -175,7 +175,8 @@ export interface CatalogModule {
   id: number;
   name: string;
   subject: string;
-  free_tests_remaining: number;
+  /** Per-module free-attempt quota; 2 for guests (no token). */
+  remaining_quota: number;
   tests: CatalogTest[];
 }
 
@@ -194,4 +195,34 @@ export interface QuotaExceededPayload {
   error: 'quota_exceeded';
   message: string;
   test_id: number;
+}
+
+/** GET /api/documents index tree (public; enrolled docs carry lock flags). */
+export interface DocumentsIndexDocument {
+  id: number;
+  title: string;
+  visibility: DocumentVisibility;
+}
+
+export interface DocumentsIndexChapter {
+  chapter: string | null;
+  documents: DocumentsIndexDocument[];
+}
+
+export interface DocumentsIndexModule {
+  id: number | null;
+  name: string;
+  sort_order: number;
+  chapters: DocumentsIndexChapter[];
+}
+
+export interface DocumentsIndexSubject {
+  id: number;
+  name: string;
+  sort_order: number;
+  modules: DocumentsIndexModule[];
+}
+
+export interface DocumentsIndexResponse {
+  subjects: DocumentsIndexSubject[];
 }

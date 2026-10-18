@@ -76,14 +76,10 @@ export default function TestsScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    // The catalog API needs a token; guests get the upsell state instead
-    // of a doomed request.
-    if (!isGuest) {
-      fetchCatalog();
-    } else {
-      setLoading(false);
-    }
-  }, [isGuest, fetchCatalog]);
+    // The catalog is public (BRD guest browsing): it loads with or without
+    // a token. Guests get remaining_quota: 2 from the API.
+    fetchCatalog();
+  }, [fetchCatalog]);
 
   const sections: TestSection[] = useMemo(() => {
     const visible =
@@ -109,6 +105,26 @@ export default function TestsScreen({ navigation }: Props) {
   }, [subjects, selectedSubject]);
 
   const handleTestPress = async (test: CatalogTest, module: CatalogModule) => {
+    // Unregistered visitors can browse but not start: prompt signup.
+    // (Guests have no token, so the access check below would only 401.)
+    if (isGuest) {
+      Alert.alert(
+        'Sign Up to Start',
+        'Create a free account in 30 seconds to start your 2 free practice tests for this module and save your score.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Create Account / Log In',
+            onPress: () => {
+              // Exits guest mode -> RootNavigator shows the Auth stack.
+              void logout();
+            },
+          },
+        ],
+      );
+      return;
+    }
+
     if (checkingId !== null) return;
     setCheckingId(test.id);
     try {
@@ -192,7 +208,7 @@ export default function TestsScreen({ navigation }: Props) {
       <Text style={styles.sectionTitle}>{section.title}</Text>
       <View style={styles.quotaPill}>
         <Text style={styles.quotaText}>
-          {section.module.free_tests_remaining} free left
+          {section.module.remaining_quota} free left
         </Text>
       </View>
     </View>
@@ -222,28 +238,6 @@ export default function TestsScreen({ navigation }: Props) {
       })}
     </ScrollView>
   );
-
-  // Guests have no token, so the catalog API would only 401. Show the
-  // upsell instead of a doomed request.
-  if (isGuest) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.title}>You're browsing as a guest</Text>
-        <Text style={styles.subtitle}>
-          Create a free account to browse the test catalog and get 2 free
-          attempts per module.
-        </Text>
-        <View style={styles.retryButton}>
-          <PrimaryButton
-            title="Create an Account / Log In"
-            onPress={() => {
-              void logout();
-            }}
-          />
-        </View>
-      </View>
-    );
-  }
 
   if (loading) {
     return (
