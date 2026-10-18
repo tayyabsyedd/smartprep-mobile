@@ -1,0 +1,160 @@
+/**
+ * Domain types mirroring the smartprep-api JSON contracts.
+ *
+ * Sources of truth (Laravel):
+ * - User / AuthResponse .... App\Http\Resources\UserResource,
+ *                             App\Http\Controllers\Api\AuthController
+ * - Subject, Module, Test ... App\Models\*
+ * - StudyDocument ........... App\Http\Controllers\Api\DocumentController
+ * - Enrollment .............. App\Http\Controllers\Api\EnrollmentController
+ *
+ * Keep these in sync with the backend. When a contract changes,
+ * `npx tsc --noEmit` will surface every call site that needs updating.
+ */
+
+// ---------------------------------------------------------------------------
+// Auth & users
+// ---------------------------------------------------------------------------
+
+export type UserRole = 'student' | 'instructor' | 'admin';
+
+export interface ModuleQuota {
+  id: number;
+  name: string;
+  subject: string | null;
+  free_tests_remaining: number;
+}
+
+export interface Entitlement {
+  /** Lowercased class basename from the API: 'test' | 'bundle'. */
+  type: string;
+  id: number;
+  title: string | null;
+  source: string;
+  granted_at: string | null;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  /** Nullable: phone is optional at registration. */
+  phone: string | null;
+  role: UserRole;
+  is_enrolled: boolean;
+  enrollment_id: string | null;
+  /** Per-module free-test allowance, from GET /api/auth/me. */
+  modules: ModuleQuota[];
+  /** Live entitlements (purchased/unlocked tests & bundles). */
+  entitlements: Entitlement[];
+}
+
+/** POST /api/auth/register and POST /api/auth/login */
+export interface AuthResponse {
+  message: string;
+  token: string;
+  token_type: 'Bearer';
+  user: User;
+}
+
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+export interface LoginPayload {
+  /** Email address or phone number. */
+  login: string;
+  password: string;
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+export interface Subject {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface Module {
+  id: number;
+  subject_id: number;
+  name: string;
+  description: string | null;
+}
+
+export type TestKind = 'practice' | 'mock';
+
+export interface Test {
+  id: number;
+  module_id: number;
+  title: string;
+  description: string | null;
+  kind: TestKind;
+  timed: boolean;
+  duration_minutes: number | null;
+  is_free: boolean;
+  /**
+   * Laravel's `decimal:2` cast serializes as a string on the wire
+   * (e.g. "499.00"), so both shapes are accepted.
+   */
+  price: number | string | null;
+}
+
+/**
+ * Named StudyDocument (not Document) to avoid shadowing the DOM `Document`
+ * global. Shape matches the API's `documents` table row.
+ */
+export type DocumentVisibility = 'public' | 'enrolled';
+
+export interface StudyDocument {
+  id: number;
+  subject_id: number;
+  module_id: number;
+  chapter: string | null;
+  title: string;
+  visibility: DocumentVisibility;
+  file_path: string;
+}
+
+// ---------------------------------------------------------------------------
+// Enrollment — POST /api/enrollment/verify
+// ---------------------------------------------------------------------------
+
+export interface EnrollmentVerifyPayload {
+  roll_id: string;
+}
+
+/**
+ * NOTE: the real API returns `{ message, is_enrolled }` — there is no
+ * `status: 'enrolled' | 'pending'` field. Typed to the wire contract.
+ */
+export interface EnrollmentVerifyResponse {
+  message: string;
+  is_enrolled: boolean;
+  /** Present with HTTP 202 when an identical pending request already exists. */
+  request?: {
+    id: number;
+    enrollment_id: string;
+    status: string;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// API error shapes (used by the network layer)
+// ---------------------------------------------------------------------------
+
+/** Laravel 422 validation payload: { message, errors: { field: [...] } } */
+export interface LaravelValidationError {
+  message: string;
+  errors: Record<string, string[]>;
+}
+
+/** General Laravel error payload: { message } (401, 403, 404, 422, 500). */
+export interface LaravelError {
+  message: string;
+}
