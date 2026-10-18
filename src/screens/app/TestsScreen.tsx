@@ -48,7 +48,7 @@ interface TestSection {
 const ALL_SUBJECTS = '__all__';
 
 export default function TestsScreen({ navigation }: Props) {
-  const { user } = useAuth();
+  const { user, isGuest, logout } = useAuth();
   const [subjects, setSubjects] = useState<CatalogSubject[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -76,8 +76,14 @@ export default function TestsScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    fetchCatalog();
-  }, [fetchCatalog]);
+    // The catalog API needs a token; guests get the upsell state instead
+    // of a doomed request.
+    if (!isGuest) {
+      fetchCatalog();
+    } else {
+      setLoading(false);
+    }
+  }, [isGuest, fetchCatalog]);
 
   const sections: TestSection[] = useMemo(() => {
     const visible =
@@ -217,6 +223,28 @@ export default function TestsScreen({ navigation }: Props) {
     </ScrollView>
   );
 
+  // Guests have no token, so the catalog API would only 401. Show the
+  // upsell instead of a doomed request.
+  if (isGuest) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.title}>You're browsing as a guest</Text>
+        <Text style={styles.subtitle}>
+          Create a free account to browse the test catalog and get 2 free
+          attempts per module.
+        </Text>
+        <View style={styles.retryButton}>
+          <PrimaryButton
+            title="Create an Account / Log In"
+            onPress={() => {
+              void logout();
+            }}
+          />
+        </View>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.root}>
@@ -322,6 +350,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    backgroundColor: '#FEF7FF',
   },
   title: {
     fontSize: 20,

@@ -7,11 +7,13 @@ import AuthNavigator from './AuthNavigator';
 
 /**
  * Session-driven root: splash while the boot check settles, then the
- * Auth stack (no token) or the app tabs (token). A 401 anywhere drops the
- * token via the api interceptor -> AuthProvider resets -> we land back here.
+ * Auth stack (no token and not a guest) or the app tabs (token or guest
+ * mode). A 401 anywhere drops the token via the api interceptor ->
+ * AuthProvider resets -> we land back here. Guest 401s are per-screen
+ * errors and never bounce the guest to the Auth stack.
  */
 export default function RootNavigator() {
-  const { token, isLoading } = useAuth();
+  const { token, isGuest, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -23,7 +25,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {token ? <AppNavigator /> : <AuthNavigator />}
+      {token || isGuest ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }

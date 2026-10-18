@@ -11,7 +11,7 @@ import type { EnrollmentVerifyResponse } from '../../types';
 type VerifyState = 'idle' | 'success' | 'pending' | 'error';
 
 export default function ProfileScreen() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, isGuest, logout, refreshUser } = useAuth();
   const [rollId, setRollId] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifyState, setVerifyState] = useState<VerifyState>('idle');
@@ -119,7 +119,9 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.headerText}>
           <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+          {user.email ? (
+            <Text style={styles.email}>{user.email}</Text>
+          ) : null}
         </View>
         <View
           style={[
@@ -145,14 +147,37 @@ export default function ProfileScreen() {
         </View>
       ) : null}
 
+      {/* Guest upsell banner */}
+      {isGuest ? (
+        <View style={styles.card}>
+          <FormBanner
+            kind="info"
+            message="You're browsing as a guest. Create a free account to save your progress and unlock 2 free tests per module."
+          />
+          <PrimaryButton
+            title="Create an Account / Log In"
+            onPress={handleLogout}
+            loading={loggingOut}
+            disabled={loggingOut}
+          />
+        </View>
+      ) : null}
+
       {/* Roll ID verification (BR-02) — guests only */}
       {!enrolled ? (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Verify your enrollment</Text>
-          <Text style={styles.cardSubtitle}>
-            Enter the roll ID your institute gave you to unlock the enrolled
-            test allowance.
-          </Text>
+          {isGuest ? (
+            <FormBanner
+              kind="info"
+              message="Your roll ID links to an account. Create a free account first — verifying then unlocks the enrolled test allowance."
+            />
+          ) : (
+            <Text style={styles.cardSubtitle}>
+              Enter the roll ID your institute gave you to unlock the enrolled
+              test allowance.
+            </Text>
+          )}
 
           {verifyState !== 'idle' && verifyMessage ? (
             <FormBanner
@@ -173,21 +198,31 @@ export default function ProfileScreen() {
             onChangeText={setRollId}
             autoCapitalize="characters"
             returnKeyType="done"
-            onSubmitEditing={handleVerify}
+            onSubmitEditing={isGuest ? undefined : handleVerify}
             placeholder="e.g. ROLL-101"
+            editable={!isGuest}
           />
-          <PrimaryButton
-            title="Verify Enrollment"
-            onPress={handleVerify}
-            loading={verifying}
-            disabled={verifying}
-          />
+          {isGuest ? (
+            <PrimaryButton
+              title="Create Account to Verify"
+              onPress={handleLogout}
+              loading={loggingOut}
+              disabled={loggingOut}
+            />
+          ) : (
+            <PrimaryButton
+              title="Verify Enrollment"
+              onPress={handleVerify}
+              loading={verifying}
+              disabled={verifying}
+            />
+          )}
         </View>
       ) : null}
 
       <View style={styles.logoutRow}>
         <PrimaryButton
-          title="Log out"
+          title={isGuest ? 'Exit Guest Mode / Sign In' : 'Log out'}
           onPress={handleLogout}
           loading={loggingOut}
           disabled={loggingOut}

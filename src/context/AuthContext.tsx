@@ -5,11 +5,18 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { api, onUnauthenticated } from '../services/api';
 import type { AuthResponse, User } from '../types';
-import { getToken, removeToken, setToken } from '../utils/storage';
+import {
+  getIsGuestMode,
+  getToken,
+  removeToken,
+  setIsGuestMode,
+  setToken,
+} from '../utils/storage';
 
 export interface LoginCredentials {
   email?: string;
@@ -27,20 +34,41 @@ export interface RegisterData {
 interface AuthContextValue {
   user: User | null;
   token: string | null;
+  /** True while browsing via "Continue as Guest" (no token, no account). */
+  isGuest: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  /** Enter guest mode: placeholder user, no token, persisted across restarts. */
+  continueAsGuest: () => Promise<void>;
   /** Re-fetch GET /api/auth/me (profile, quotas, entitlements). */
   refreshUser: () => Promise<void>;
 }
+
+/** Placeholder identity for guest mode: no token, no server state. */
+const GUEST_USER: User = {
+  id: 0,
+  name: 'Guest Student',
+  email: '',
+  phone: null,
+  role: 'student',
+  is_enrolled: false,
+  enrollment_id: null,
+  modules: [],
+  entitlements: [],
+};
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  // Ref mirror of isGuest for the 401 subscription below, which is
+  // registered once and must see the latest value.
+  const isGuestRef = useRef(false);
 
   const resetSession = useCallback(() => {
     setUser(null);
@@ -48,6 +76,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // --- Actions -------------------------------------------------------------
+
+  const clearGuestMode = useCallback(async () => {
+    await setIsGuestMode(false);
+    isGuestRef.current = false;
+    setIsGuest(false);
+  }, []);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     // The API takes a single `login` field (email or phone); accept either.
@@ -64,7 +98,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setToken(data.token);
     setTokenState(data.token);
     setUser(data.user);
-  }, []);
+    // A guest who logs in leaves guest mode behind.
+    await clearGuestMode();
+  }, [clearGuestMode]);
 
   const register = useCallback(async (data: RegisterData) => {
     // Email is required by the API; if the caller omits it the server
@@ -81,20 +117,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setToken(res.token);
     setTokenState(res.token);
     setUser(res.user);
+    // A guest who registers leaves guest mode behind.
+    await clearGuestMode();
+  }, [clearGuestMode]);
+
+  const continueAsGuest = useCallback(async () => {
+    await setIsGuestMode(true);
+    isGuestRef.current = true;
+    setIsGuest(true);
+    setTokenState(null);
+    setUser(GUEST_USER);
+    // RootNavigator flips to the app tabs on isGuest.
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      // Best-effort: revokes the token server-side when reachable.
-      await api.post('/auth/logout');
-    } catch {
-      // A dead token or offline device must never trap the user
-      // in a logged-in state.
-    } finally {
-      await removeToken();
-      resetSession();
+    if (!isGuestRef.current) {
+      try {
+        // Best-effort: revokes the token server-side when reachable.
+        // Guests have no token, so there is nothing to revoke.
+        await api.post('/auth/logout');
+      } catch {
+        // A dead token or offline device must never trap the user
+        // in a logged-in state.
+      }
     }
-  }, [resetSession]);
+    await removeToken();
+    await clearGuestMode();
+    resetSession();
+  }, [resetSession, clearGuestMode]);
 
   const refreshUser = useCallback(async () => {
     const { data } = await api.get<User>('/auth/me');
@@ -106,7 +156,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Subscribe first: a 401 raised while the boot check itself runs must
     // also drop the session (the interceptor purges storage and emits).
-    const unsubscribe = onUnauthenticated(() => resetSession());
+    // Guest mode has no token, so a 401 there is a per-screen error, not
+    // a logout — only real token sessions get torn down.
+    const unsubscribe = onUnauthenticated(() => {
+      if (!isGuestRef.current) {
+        resetSession();
+      }
+    });
 
     (async () => {
       try {
@@ -115,6 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data } = await api.get<User>('/auth/me');
           setTokenState(stored);
           setUser(data);
+        } else if (await getIsGuestMode()) {
+          // Returning guest: straight back into guest mode, no network needed.
+          isGuestRef.current = true;
+          setIsGuest(true);
+          setUser(GUEST_USER);
         }
       } catch (error) {
         const status = axios.isAxiosError(error)
@@ -146,8 +207,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [resetSession]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isLoading, login, register, logout, refreshUser }),
-    [user, token, isLoading, login, register, logout, refreshUser]
+    () => ({
+      user,
+      token,
+      isGuest,
+      isLoading,
+      login,
+      register,
+      logout,
+      continueAsGuest,
+      refreshUser,
+    }),
+    [
+      user,
+      token,
+      isGuest,
+      isLoading,
+      login,
+      register,
+      logout,
+      continueAsGuest,
+      refreshUser,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

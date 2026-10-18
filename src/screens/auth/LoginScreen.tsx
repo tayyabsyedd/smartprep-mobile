@@ -19,10 +19,11 @@ import { extractErrorMessage } from '../../services/api';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const { login } = useAuth();
+  const { login, continueAsGuest } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit =
@@ -46,6 +47,17 @@ export default function LoginScreen({ navigation }: Props) {
       setError(extractErrorMessage(e));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGuest = async () => {
+    if (guestLoading) return;
+    setGuestLoading(true);
+    try {
+      await continueAsGuest();
+      // isGuest is set — RootNavigator flips to the app tabs on its own.
+    } finally {
+      setGuestLoading(false);
     }
   };
 
@@ -101,6 +113,14 @@ export default function LoginScreen({ navigation }: Props) {
             <Text style={styles.switchLink}>Create an account</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.guestRow}>
+          <TouchableOpacity onPress={handleGuest} disabled={guestLoading}>
+            <Text style={styles.guestLink}>
+              {guestLoading ? 'Entering guest mode…' : 'Continue as Guest'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -147,5 +167,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#6750A4',
+  },
+  guestRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  guestLink: {
+    fontSize: 14,
+    color: '#49454F',
+    textDecorationLine: 'underline',
   },
 });

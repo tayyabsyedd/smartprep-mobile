@@ -31,3 +31,30 @@ export async function removeToken(): Promise<void> {
     // Best-effort purge; nothing useful to do on failure.
   }
 }
+
+/**
+ * Guest-mode flag. Separate from the token: a guest has *no* token and no
+ * server session, but chose "Continue as Guest" and should land straight
+ * back in the app on restart.
+ */
+export const GUEST_MODE_STORAGE_KEY = 'smartprep.auth.guest';
+
+export async function getIsGuestMode(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(GUEST_MODE_STORAGE_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setIsGuestMode(value: boolean): Promise<void> {
+  try {
+    if (value) {
+      await AsyncStorage.setItem(GUEST_MODE_STORAGE_KEY, '1');
+    } else {
+      await AsyncStorage.removeItem(GUEST_MODE_STORAGE_KEY);
+    }
+  } catch {
+    // Best-effort; the in-memory guest state still works for this session.
+  }
+}
