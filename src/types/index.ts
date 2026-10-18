@@ -158,3 +158,40 @@ export interface LaravelValidationError {
 export interface LaravelError {
   message: string;
 }
+
+/** GET /api/tests catalog tree. */
+export interface CatalogTest {
+  id: number;
+  title: string;
+  kind: TestKind;
+  timed: boolean;
+  duration_minutes: number | null;
+  is_free: boolean;
+  price: number | string | null;
+  question_count: number;
+}
+
+export interface CatalogModule {
+  id: number;
+  name: string;
+  subject: string;
+  free_tests_remaining: number;
+  tests: CatalogTest[];
+}
+
+export interface CatalogSubject {
+  id: number;
+  name: string;
+  modules: CatalogModule[];
+}
+
+export interface TestsCatalogResponse {
+  subjects: CatalogSubject[];
+}
+
+/** Exact 403 payload from AccessService::ensureCanAttempt. */
+export interface QuotaExceededPayload {
+  error: 'quota_exceeded';
+  message: string;
+  test_id: number;
+}
