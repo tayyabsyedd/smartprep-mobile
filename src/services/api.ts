@@ -1,12 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { DeviceEventEmitter } from 'react-native';
+import { getToken, removeToken } from '../utils/storage';
 
-export const TOKEN_STORAGE_KEY = 'smartprep.auth.token';
+export { TOKEN_STORAGE_KEY } from '../utils/storage';
 
 /**
- * Emitted (via DeviceEventEmitter) when the API answers 401. The root
- * navigator subscribes with `onUnauthenticated()` and redirects to Auth.
+ * Emitted (via DeviceEventEmitter) when the API answers 401. The
+ * AuthProvider subscribes with `onUnauthenticated()` and drops the session,
+ * which makes the RootNavigator render the Auth stack.
  */
 export const UNAUTHENTICATED_EVENT = 'smartprep.unauthenticated';
 
@@ -30,7 +31,7 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+    const token = await getToken();
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`);
     }
@@ -89,33 +90,18 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Token invalid or expired: purge it so a stale token can never be
-      // reused, then broadcast — the navigator decides what "logged out" means.
-      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY).catch(() => undefined);
+      // reused, then broadcast — the AuthProvider decides what "logged out"
+      // means for the UI.
+      await removeToken();
       DeviceEventEmitter.emit(UNAUTHENTICATED_EVENT);
     }
     return Promise.reject(error);
   }
 );
 
-// ---------------------------------------------------------------------------
-// Token helpers + unauthenticated subscription
-// ---------------------------------------------------------------------------
-
-export async function saveToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-}
-
-export async function clearToken(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-}
-
-export async function getToken(): Promise<string | null> {
-  return AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-}
-
 /**
  * Subscribe to the 401 broadcast. Returns an unsubscribe function —
- * call it in the effect cleanup of the root navigator.
+ * call it in the effect cleanup.
  */
 export function onUnauthenticated(listener: () => void): () => void {
   const subscription = DeviceEventEmitter.addListener(
