@@ -4,6 +4,7 @@ import React from 'react';
 import NotesScreen from '../screens/app/NotesScreen';
 import ProfileScreen from '../screens/app/ProfileScreen';
 import TestRunnerScreen from '../screens/app/TestRunnerScreen';
+import TestResultsScreen from '../screens/app/TestResultsScreen';
 import TestsScreen from '../screens/app/TestsScreen';
 
 export type AppTabParamList = {
@@ -14,7 +15,8 @@ export type AppTabParamList = {
 
 export type AppStackParamList = {
   MainTabs: undefined;
-  TestRunner: { testId: number };
+  TestRunner: { testId: number; title: string };
+  TestResults: { attemptId: number };
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -47,6 +49,11 @@ export default function AppNavigator() {
         name="TestRunner"
         component={TestRunnerScreen}
         options={{ title: 'Test' }}
+      />
+      <Stack.Screen
+        name="TestResults"
+        component={TestResultsScreen}
+        options={{ title: 'Results' }}
       />
     </Stack.Navigator>
   );

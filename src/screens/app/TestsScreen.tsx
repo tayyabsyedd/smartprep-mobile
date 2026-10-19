@@ -130,7 +130,7 @@ export default function TestsScreen({ navigation }: Props) {
     try {
       // 200: accessible (free, entitled, or quota left). 403: paywall below.
       await api.get(`/tests/${test.id}`);
-      navigation.navigate('TestRunner', { testId: test.id });
+      navigation.navigate('TestRunner', { testId: test.id, title: test.title });
     } catch (e) {
       if (
         axios.isAxiosError(e) &&

@@ -226,3 +226,65 @@ export interface DocumentsIndexSubject {
 export interface DocumentsIndexResponse {
   subjects: DocumentsIndexSubject[];
 }
+
+/** POST /api/tests/{id}/start — sanitized questions (no answers/explanations). */
+export type QuestionType = 'mcq' | 'true_false' | 'multi_select';
+
+export interface AttemptQuestion {
+  question_id: number;
+  qtype: QuestionType;
+  question_text: string;
+  options: string[];
+  marks: number;
+}
+
+export interface StartAttemptResponse {
+  attempt_id: number;
+  /** ISO timestamp — used to compute remaining time on resume. */
+  started_at: string;
+  /** Total seconds for the attempt; null = untimed. */
+  duration_seconds: number | null;
+  resumed: boolean;
+  questions: AttemptQuestion[];
+}
+
+/**
+ * NOTE: the real API takes a BATCH under `answers`, with `selected` (not
+ * `selected_option_ids`) holding option indices — typed to the wire contract.
+ */
+export interface AnswerPayloadItem {
+  question_id: number;
+  selected: number[];
+  time_spent_seconds?: number;
+}
+
+/** GET /api/test-attempts/{id}/results — full scorecard. */
+export interface ResultsQuestion {
+  question_id: number;
+  qtype: QuestionType;
+  question_text: string;
+  options: string[];
+  selected_options: number[];
+  selected_labels: (string | null)[];
+  correct_options: number[];
+  correct_labels: (string | null)[];
+  is_correct: boolean;
+  marks: number;
+  marks_obtained: number;
+  time_spent_seconds: number;
+  explanation: string | null;
+}
+
+export interface AttemptResults {
+  attempt_id: number;
+  test: { id: number; title: string; module: string };
+  score: number;
+  total_marks: number;
+  percentage: number;
+  passed: boolean;
+  pass_percentage: number;
+  time_spent_seconds: number;
+  app_switches: number;
+  submitted_at: string | null;
+  questions: ResultsQuestion[];
+}
