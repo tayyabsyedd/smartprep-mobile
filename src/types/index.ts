@@ -288,3 +288,51 @@ export interface AttemptResults {
   submitted_at: string | null;
   questions: ResultsQuestion[];
 }
+
+/* ------------------------------------------------------------------ */
+/* Payments (M4)                                                       */
+/* ------------------------------------------------------------------ */
+
+export type PaymentMethod = 'mock' | 'jazzcash' | 'easypaisa' | 'bank_transfer';
+
+/** POST /api/purchases/initiate */
+export interface InitiatePurchaseRequest {
+  purchasable_type: 'test';
+  purchasable_id: number;
+  payment_method: PaymentMethod;
+  phone_number?: string;
+}
+
+/** POST /api/purchases/initiate — response. */
+export interface InitiatePurchaseResponse {
+  purchase_id: number;
+  status: string;
+  redirect_url?: string | null;
+  payment_data?: {
+    post_url?: string;
+    fields?: Record<string, string>;
+    payload?: Record<string, string>;
+    bank?: string | null;
+    account_title?: string | null;
+    account_number?: string | null;
+    iban?: string | null;
+    instructions?: string | null;
+    message?: string;
+  } | null;
+  /** Present on 422s from the driver layer (e.g. gateway not configured). */
+  message?: string;
+}
+
+/** GET /api/purchases/my-purchases — one row. */
+export interface Purchase {
+  id: number;
+  item_title: string | null;
+  purchasable_type: string;
+  purchasable_id: number;
+  amount: number | string;
+  currency: string;
+  payment_method: string;
+  status: string;
+  purchased_at: string | null;
+  created_at: string;
+}

@@ -146,13 +146,14 @@ export default function TestsScreen({ navigation }: Props) {
     }
   };
 
-  const handleUnlock = () => {
+  const handleUnlocked = () => {
+    const current = paywall;
     setPaywall(null);
-    // Step 5 wires this to the real payment flow.
-    Alert.alert(
-      'Coming in Step 5',
-      'The payment flow unlocks paid tests in the next step.',
-    );
+    if (current) {
+      // The purchase granted an entitlement, so re-running the access check
+      // now opens the TestRunner instead of the paywall.
+      void handleTestPress(current.test, current.module);
+    }
   };
 
   const renderTestCard: SectionListRenderItem<CatalogTest, TestSection> = ({
@@ -305,7 +306,7 @@ export default function TestsScreen({ navigation }: Props) {
         test={paywall?.test ?? null}
         moduleName={paywall?.module.name ?? ''}
         allowance={user?.is_enrolled ? 5 : 2}
-        onUnlock={handleUnlock}
+        onUnlocked={handleUnlocked}
         onDismiss={() => setPaywall(null)}
       />
     </View>
