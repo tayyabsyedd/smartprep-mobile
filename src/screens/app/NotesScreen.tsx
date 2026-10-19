@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
   ScrollView,
   SectionList,
@@ -11,15 +10,28 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FormBanner } from '../../components/FormBanner';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { RollIdUnlockModal } from '../../components/RollIdUnlockModal';
 import { useAuth } from '../../context/AuthContext';
+import {
+  AppStackParamList,
+  AppTabParamList,
+} from '../../navigation/AppNavigator';
 import { api, extractErrorMessage } from '../../services/api';
 import type {
   DocumentsIndexDocument,
   DocumentsIndexResponse,
   DocumentsIndexSubject,
 } from '../../types';
+
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<AppTabParamList, 'Notes'>,
+  NativeStackScreenProps<AppStackParamList>
+>;
 
 interface NotesSection {
   key: string;
@@ -32,16 +44,19 @@ const ALL_SUBJECTS = '__all__';
 /**
  * Study notes browser (BRD guest browsing): the documents index is public,
  * so guests see everything. Enrolled-only documents render with a lock
- * badge — the stream endpoint still 403s them for non-enrolled users.
- * The in-app PDF viewer itself lands in a later step (M6).
+ * badge and open a roll-ID unlock prompt — the stream endpoint stays the
+ * enforcement point and still 403s non-enrolled users.
  */
-export default function NotesScreen() {
-  const { user, isGuest, logout } = useAuth();
+export default function NotesScreen({ navigation }: Props) {
+  const { user, isGuest } = useAuth();
   const [subjects, setSubjects] = useState<DocumentsIndexSubject[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string>(ALL_SUBJECTS);
+  // Document awaiting unlock via the roll-ID modal (null = modal closed).
+  const [unlockDoc, setUnlockDoc] =
+    useState<DocumentsIndexDocument | null>(null);
 
   // Only enrolled students can open enrolled-only documents.
   const canOpenEnrolled = !!user && !isGuest && user.is_enrolled;
@@ -90,33 +105,28 @@ export default function NotesScreen() {
     return list;
   }, [subjects, selectedSubject]);
 
+  const openDocument = (doc: DocumentsIndexDocument) => {
+    navigation.navigate('DocumentViewer', {
+      documentId: doc.id,
+      title: doc.title,
+    });
+  };
+
   const handleDocPress = (doc: DocumentsIndexDocument) => {
     const locked = doc.visibility === 'enrolled' && !canOpenEnrolled;
     if (locked) {
-      if (isGuest) {
-        Alert.alert(
-          'Enrolled Students Only',
-          'Create a free account and verify your roll ID to unlock enrolled notes.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Create Account / Log In',
-              onPress: () => {
-                // Exits guest mode -> RootNavigator shows the Auth stack.
-                void logout();
-              },
-            },
-          ],
-        );
-      } else {
-        Alert.alert(
-          'Enrolled Students Only',
-          'Verify your institute roll ID on the Profile tab to unlock enrolled notes.',
-        );
-      }
+      // Guests and non-enrolled students get the roll-ID unlock prompt.
+      setUnlockDoc(doc);
       return;
     }
-    Alert.alert(doc.title, 'The in-app PDF viewer arrives in a later step.');
+    openDocument(doc);
+  };
+
+  const handleUnlocked = () => {
+    const doc = unlockDoc;
+    setUnlockDoc(null);
+    // Verification flipped the enrolled flag — open the document now.
+    if (doc) openDocument(doc);
   };
 
   const renderDocCard: SectionListRenderItem<
@@ -240,6 +250,11 @@ export default function NotesScreen() {
             <Text style={styles.subtitle}>No notes available yet.</Text>
           </View>
         }
+      />
+      <RollIdUnlockModal
+        visible={unlockDoc !== null}
+        onDismiss={() => setUnlockDoc(null)}
+        onUnlocked={handleUnlocked}
       />
     </View>
   );

@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import DocumentViewerScreen from '../screens/app/DocumentViewerScreen';
 import NotesScreen from '../screens/app/NotesScreen';
 import ProfileScreen from '../screens/app/ProfileScreen';
 import TestRunnerScreen from '../screens/app/TestRunnerScreen';
@@ -17,6 +18,7 @@ export type AppStackParamList = {
   MainTabs: undefined;
   TestRunner: { testId: number; title: string };
   TestResults: { attemptId: number };
+  DocumentViewer: { documentId: number; title: string };
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -54,6 +56,11 @@ export default function AppNavigator() {
         name="TestResults"
         component={TestResultsScreen}
         options={{ title: 'Results' }}
+      />
+      <Stack.Screen
+        name="DocumentViewer"
+        component={DocumentViewerScreen}
+        options={{ title: 'Document' }}
       />
     </Stack.Navigator>
   );
