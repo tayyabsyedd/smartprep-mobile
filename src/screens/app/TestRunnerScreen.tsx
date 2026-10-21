@@ -17,6 +17,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -63,6 +64,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number[]>>({});
+  const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
   const [visited, setVisited] = useState<Record<number, boolean>>({});
   const [paletteVisible, setPaletteVisible] = useState(false);
@@ -79,7 +81,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
   const currentQidRef = useRef<number | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittedRef = useRef(false);
-  const pendingSaveRef = useRef<{ qid: number; selected: number[] } | null>(null);
+  const pendingSaveRef = useRef<{ qid: number; selected: number[]; textAnswer?: string } | null>(null);
   const phaseRef = useRef<Phase>('starting');
 
   useEffect(() => {
@@ -143,7 +145,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
   // --- Autosave --------------------------------------------------------------
 
   const sendSave = useCallback(
-    async (qid: number, selected: number[]) => {
+    async (qid: number, selected: number[], textAnswer?: string) => {
       const id = attemptId;
       if (id === null || submittedRef.current) return;
       try {
@@ -154,6 +156,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
             {
               question_id: qid,
               selected,
+              ...(textAnswer !== undefined ? { text_answer: textAnswer } : {}),
               time_spent_seconds: Math.round(totalTimeFor(qid)),
             } satisfies AnswerPayloadItem,
           ],
@@ -166,12 +169,12 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
   );
 
   const scheduleSave = useCallback(
-    (qid: number, selected: number[]) => {
-      pendingSaveRef.current = { qid, selected };
+    (qid: number, selected: number[], textAnswer?: string) => {
+      pendingSaveRef.current = { qid, selected, textAnswer };
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
         pendingSaveRef.current = null;
-        void sendSave(qid, selected);
+        void sendSave(qid, selected, textAnswer);
       }, AUTOSAVE_DEBOUNCE_MS);
     },
     [sendSave],
@@ -186,7 +189,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
     const pending = pendingSaveRef.current;
     pendingSaveRef.current = null;
     if (pending) {
-      await sendSave(pending.qid, pending.selected);
+      await sendSave(pending.qid, pending.selected, pending.textAnswer);
     }
   }, [sendSave]);
 
@@ -209,10 +212,18 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
         // was answered this session — sending [] for the rest would wipe
         // rows the server saved before the app was killed.
         const payload: AnswerPayloadItem[] = questions
-          .filter((q) => (resumed ? answers[q.question_id] !== undefined : true))
+          .filter((q) =>
+            resumed
+              ? answers[q.question_id] !== undefined ||
+                textAnswers[q.question_id] !== undefined
+              : true,
+          )
           .map((q) => ({
             question_id: q.question_id,
             selected: answers[q.question_id] ?? [],
+            ...(q.qtype === 'text_input'
+              ? { text_answer: textAnswers[q.question_id] ?? '' }
+              : {}),
             time_spent_seconds: Math.round(
               timeSpentRef.current[q.question_id] ?? 0,
             ),
@@ -253,7 +264,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
         }
       }
     },
-    [attemptId, questions, resumed, answers, stopTicker, noteTime, navigation],
+    [attemptId, questions, resumed, answers, textAnswers, stopTicker, noteTime, navigation],
   );
 
   useEffect(() => {
@@ -421,16 +432,32 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
     [questions, currentIndex, answers, scheduleSave],
   );
 
+  const handleTextChange = useCallback(
+    (value: string) => {
+      const q = questions[currentIndex];
+      if (!q || submittedRef.current) return;
+      setTextAnswers((prev) => ({ ...prev, [q.question_id]: value }));
+      scheduleSave(q.question_id, [], value);
+    },
+    [questions, currentIndex, scheduleSave],
+  );
+
   const toggleFlag = useCallback(() => {
     const q = questions[currentIndex];
     if (!q) return;
     setFlagged((prev) => ({ ...prev, [q.question_id]: !prev[q.question_id] }));
   }, [questions, currentIndex]);
 
+  const isAnswered = useCallback(
+    (q: AttemptQuestion): boolean =>
+      q.qtype === 'text_input'
+        ? (textAnswers[q.question_id] ?? '').trim().length > 0
+        : (answers[q.question_id] ?? []).length > 0,
+    [answers, textAnswers],
+  );
+
   const handleSubmitPress = useCallback(() => {
-    const answeredCount = questions.filter(
-      (q) => (answers[q.question_id] ?? []).length > 0,
-    ).length;
+    const answeredCount = questions.filter((q) => isAnswered(q)).length;
     const flaggedCount = questions.filter((q) => flagged[q.question_id]).length;
     Alert.alert(
       'Submit Test?',
@@ -440,22 +467,21 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
         { text: 'Submit', onPress: () => void submitRef.current(false) },
       ],
     );
-  }, [questions, answers, flagged]);
+  }, [questions, isAnswered, flagged]);
 
   const paletteStatus = useCallback(
     (q: AttemptQuestion): 'unvisited' | 'visited' | 'answered' | 'flagged' => {
       if (flagged[q.question_id]) return 'flagged';
-      if ((answers[q.question_id] ?? []).length > 0) return 'answered';
+      if (isAnswered(q)) return 'answered';
       if (visited[q.question_id]) return 'visited';
       return 'unvisited';
     },
-    [flagged, answers, visited],
+    [flagged, isAnswered, visited],
   );
 
   const answeredTotal = useMemo(
-    () =>
-      questions.filter((q) => (answers[q.question_id] ?? []).length > 0).length,
-    [questions, answers],
+    () => questions.filter((q) => isAnswered(q)).length,
+    [questions, isAnswered],
   );
 
   // --- Render --------------------------------------------------------------------------
@@ -536,7 +562,19 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
         </View>
         <Text style={styles.questionText}>{current.question_text}</Text>
 
-        {current.options.map((option, index) => {
+        {current.qtype === 'text_input' ? (
+          <TextInput
+            style={styles.textAnswerInput}
+            value={textAnswers[current.question_id] ?? ''}
+            onChangeText={handleTextChange}
+            placeholder="Type your answer"
+            placeholderTextColor={colors.text}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="done"
+          />
+        ) : (
+          current.options.map((option, index) => {
           const isSelected = selected.includes(index);
           return (
             <TouchableOpacity
@@ -557,7 +595,8 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
               <Text style={styles.optionText}>{option}</Text>
             </TouchableOpacity>
           );
-        })}
+          })
+        )}
 
         <TouchableOpacity style={styles.flagRow} onPress={toggleFlag}>
           <Text style={styles.flagText}>
@@ -829,6 +868,16 @@ const styles = StyleSheet.create({
     color: '#1D1B20',
     flex: 1,
     lineHeight: 22,
+  },
+  textAnswerInput: {
+    borderWidth: 1,
+    borderColor: '#CAC4D0',
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.ink,
   },
   flagRow: {
     alignSelf: 'flex-start',

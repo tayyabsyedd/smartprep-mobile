@@ -155,6 +155,36 @@ function QuestionReviewCard({
         </View>
       </View>
 
+      {question.qtype === 'text_input' ? (
+        <View>
+          <View
+            style={[
+              styles.optionRow,
+              question.is_correct ? styles.optionCorrect : styles.optionWrong,
+            ]}
+          >
+            <Text style={styles.optionText}>
+              Your answer: {question.text_answer?.trim() ? question.text_answer : '—'}
+            </Text>
+            <Text
+              style={[
+                styles.optionTag,
+                question.is_correct ? styles.tagCorrect : styles.tagWrong,
+              ]}
+            >
+              {question.is_correct ? '✓ Correct' : '✗ Incorrect'}
+            </Text>
+          </View>
+          {!question.is_correct ? (
+            <View style={[styles.optionRow, styles.optionCorrect]}>
+              <Text style={styles.optionText}>
+                Correct answer: {question.correct_labels.filter(Boolean).join(' / ')}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
       {question.options.map((option, optIndex) => {
         const isCorrect = correctSet.has(optIndex);
         const isSelected = selectedSet.has(optIndex);

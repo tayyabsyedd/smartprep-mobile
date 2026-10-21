@@ -228,7 +228,7 @@ export interface DocumentsIndexResponse {
 }
 
 /** POST /api/tests/{id}/start — sanitized questions (no answers/explanations). */
-export type QuestionType = 'mcq' | 'true_false' | 'multi_select';
+export type QuestionType = 'mcq' | 'true_false' | 'multi_select' | 'text_input';
 
 export interface AttemptQuestion {
   question_id: number;
@@ -255,6 +255,8 @@ export interface StartAttemptResponse {
 export interface AnswerPayloadItem {
   question_id: number;
   selected: number[];
+  /** Typed answer for text_input questions (selected stays [] there). */
+  text_answer?: string;
   time_spent_seconds?: number;
 }
 
@@ -266,8 +268,11 @@ export interface ResultsQuestion {
   options: string[];
   selected_options: number[];
   selected_labels: (string | null)[];
-  correct_options: number[];
+  /** Option indices for choice questions; acceptable answer strings for text_input. */
+  correct_options: (number | string)[];
   correct_labels: (string | null)[];
+  /** What the student typed (text_input questions only). */
+  text_answer: string | null;
   is_correct: boolean;
   marks: number;
   marks_obtained: number;
