@@ -1,3 +1,4 @@
+import { colors } from '../theme';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6750A4',
+    color: colors.primary,
   },
   bankCard: {
     backgroundColor: '#F3EDF7',
@@ -533,6 +534,6 @@ const styles = StyleSheet.create({
   dismissText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6750A4',
+    color: colors.primary,
   },
 });

@@ -1,3 +1,4 @@
+import { colors } from '../../theme';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import axios from 'axios';
 import React, { useState } from 'react';
@@ -218,6 +219,6 @@ const styles = StyleSheet.create({
   switchLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6750A4',
+    color: colors.primary,
   },
 });

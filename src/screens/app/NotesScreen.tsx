@@ -1,3 +1,4 @@
+import { colors } from '../../theme';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -207,7 +208,7 @@ export default function NotesScreen({ navigation }: Props) {
             <View style={[styles.skeletonLine, styles.skeletonLineShort]} />
           </View>
         ))}
-        <ActivityIndicator style={styles.loader} size="large" color="#6750A4" />
+        <ActivityIndicator style={styles.loader} size="large" color={colors.primary} />
       </View>
     );
   }
@@ -242,7 +243,7 @@ export default function NotesScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => fetchDocuments(true)}
-            colors={['#6750A4']}
+            colors={[colors.primary]}
           />
         }
         ListEmptyComponent={
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   chipActive: {
-    backgroundColor: '#6750A4',
+    backgroundColor: colors.primary,
   },
   chipText: {
     fontSize: 14,

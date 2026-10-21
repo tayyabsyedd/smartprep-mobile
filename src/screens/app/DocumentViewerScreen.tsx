@@ -1,3 +1,4 @@
+import { colors } from '../../theme';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   DownloadTask,
@@ -134,7 +135,7 @@ export default function DocumentViewerScreen({ navigation, route }: Props) {
   if (phase === 'downloading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6750A4" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.statusText}>
           {progress !== null
             ? `Downloading… ${Math.round(progress * 100)}%`

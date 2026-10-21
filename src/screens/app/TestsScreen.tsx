@@ -1,3 +1,4 @@
+import { colors } from '../../theme';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -173,7 +174,7 @@ export default function TestsScreen({ navigation }: Props) {
             {test.title}
           </Text>
           {checking ? (
-            <ActivityIndicator size="small" color="#6750A4" />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <Text style={styles.chevron}>›</Text>
           )}
@@ -256,7 +257,7 @@ export default function TestsScreen({ navigation }: Props) {
         <ActivityIndicator
           style={styles.loader}
           size="large"
-          color="#6750A4"
+          color={colors.primary}
         />
       </View>
     );
@@ -292,7 +293,7 @@ export default function TestsScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => fetchCatalog(true)}
-            colors={['#6750A4']}
+            colors={[colors.primary]}
           />
         }
         ListEmptyComponent={
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   chipActive: {
-    backgroundColor: '#6750A4',
+    backgroundColor: colors.primary,
   },
   chipText: {
     fontSize: 14,
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     color: '#49454F',
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
   },
   inlineError: {
     paddingHorizontal: 16,

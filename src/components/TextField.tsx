@@ -1,3 +1,4 @@
+import { colors } from '../theme';
 import React, { useState } from 'react';
 import {
   KeyboardTypeOptions,
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   inputFocused: {
-    borderColor: '#6750A4',
+    borderColor: colors.primary,
     borderWidth: 2,
     paddingHorizontal: 15,
   },

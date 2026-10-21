@@ -1,3 +1,4 @@
+import { colors } from '../../theme';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, {
   useCallback,
@@ -462,7 +463,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
   if (phase === 'starting' || phase === 'submitting') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6750A4" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.centerText}>
           {phase === 'starting' ? 'Starting test…' : 'Submitting…'}
         </Text>
@@ -485,7 +486,7 @@ export default function TestRunnerScreen({ route, navigation }: Props) {
   if (!current) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6750A4" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -736,7 +737,7 @@ const styles = StyleSheet.create({
   },
   paletteButtonText: {
     fontSize: 18,
-    color: '#6750A4',
+    color: colors.primary,
   },
   questionContent: {
     padding: 16,
@@ -780,7 +781,7 @@ const styles = StyleSheet.create({
     borderColor: '#E7E0EC',
   },
   optionSelected: {
-    borderColor: '#6750A4',
+    borderColor: colors.primary,
     borderWidth: 2,
     padding: 13,
     backgroundColor: '#F5F0FF',
@@ -796,13 +797,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   radioSelected: {
-    borderColor: '#6750A4',
+    borderColor: colors.primary,
   },
   radioDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#6750A4',
+    backgroundColor: colors.primary,
   },
   checkbox: {
     width: 22,
@@ -815,11 +816,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   checkboxSelected: {
-    borderColor: '#6750A4',
-    backgroundColor: '#6750A4',
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   checkmark: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -861,7 +862,7 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6750A4',
+    color: colors.primary,
   },
   submitRow: {
     paddingHorizontal: 16,
@@ -943,7 +944,7 @@ const styles = StyleSheet.create({
   },
   cellCurrent: {
     borderWidth: 3,
-    borderColor: '#6750A4',
+    borderColor: colors.primary,
   },
   paletteCellText: {
     fontSize: 15,

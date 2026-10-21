@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { colors } from '../theme';
 
 interface PrimaryButtonProps {
   title: string;
@@ -9,7 +10,7 @@ interface PrimaryButtonProps {
   variant?: 'filled' | 'outlined';
 }
 
-/** Material Design 3 filled / outlined button. */
+/** Brand button: filled = SSF amber with dark text (the site's CTA style); outlined = amber border, dark text. */
 export function PrimaryButton({
   title,
   onPress,
@@ -31,7 +32,7 @@ export function PrimaryButton({
       activeOpacity={0.8}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'filled' ? '#FFFFFF' : '#6750A4'} />
+        <ActivityIndicator color={variant === 'filled' ? colors.onPrimary : colors.primary} />
       ) : (
         <Text
           style={[
@@ -55,12 +56,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   filled: {
-    backgroundColor: '#6750A4',
+    backgroundColor: colors.primary,
   },
   outlined: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#79747E',
+    borderColor: colors.primary,
   },
   disabled: {
     opacity: 0.5,
@@ -70,9 +71,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   labelFilled: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
   },
   labelOutlined: {
-    color: '#6750A4',
+    color: colors.ink,
   },
 });

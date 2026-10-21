@@ -1,3 +1,4 @@
+import { colors } from '../../theme';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import {
@@ -48,7 +49,7 @@ export default function TestResultsScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6750A4" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.centerText}>Loading your scorecard…</Text>
       </View>
     );
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   heroPercentage: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6750A4',
+    color: colors.primary,
     marginTop: 4,
   },
   passBadge: {

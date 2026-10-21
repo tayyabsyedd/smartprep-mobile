@@ -1,3 +1,4 @@
+import { colors } from '../theme';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
@@ -191,6 +192,6 @@ const styles = StyleSheet.create({
   dismissText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6750A4',
+    color: colors.primary,
   },
 });

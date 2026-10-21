@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import DocumentViewerScreen from '../screens/app/DocumentViewerScreen';
+import { colors } from '../theme';
 import NotesScreen from '../screens/app/NotesScreen';
 import ProfileScreen from '../screens/app/ProfileScreen';
 import TestRunnerScreen from '../screens/app/TestRunnerScreen';
@@ -31,7 +32,12 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
  */
 function MainTabs() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: colors.primaryDark,
+        tabBarInactiveTintColor: colors.text,
+      }}
+    >
       <Tab.Screen name="Tests" component={TestsScreen} />
       <Tab.Screen name="Notes" component={NotesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
